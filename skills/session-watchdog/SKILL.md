@@ -1,6 +1,6 @@
 ---
 name: session-watchdog
-description: Load when one agent must watch ALL the other Claude Code / Claude desktop sessions and wake the ones that stopped mid-task, ended on an error or rate limit, or wait forever on background work that already died. Without that wake, nobody notices until the user asks "are you stuck?". It reads each session's state and last turn, sorts it into DONE / WAITING-ON-USER / WAITING-ON-BACKGROUND / STOPPED-MID-TASK / ERROR / HUNG, and wakes only the stuck ones, with a message that quotes their own pending step. It never wakes finished sessions or sessions waiting for the user, keeps a wake log with hard limits, and reports what only the user can unblock. Meant to run on a schedule. Triggers on "wake stuck sessions", "watchdog for my agents", "which chats got stuck", "despierta a los chats", "chats pegados", "se quedó pegado", "que trabajen solos", "revisa si algún chat se trabó". Not for resuming the CURRENT session after an interruption (use keep-going) and not for status reports (use report-now).
+description: Load when one agent must watch ALL the other Claude Code / Claude desktop sessions and wake the ones that stopped mid-task, ended on an error or rate limit, or wait forever on background work that already died. Without that wake, nobody notices until the user asks "are you stuck?". It reads each session's state and last turn, sorts it into DONE / WAITING-ON-USER / WAITING-ON-BACKGROUND / STOPPED-MID-TASK / ERROR / HUNG, and proposes waking only the stuck ones, with a message that quotes their own pending step. It sends a wake only after the user says yes; a scheduled run with nobody to answer sends nothing and puts the proposed wakes in its report. It never wakes finished sessions or sessions waiting for the user, keeps a wake log with hard limits, and reports what only the user can unblock. Meant to run on a schedule. Triggers on "wake stuck sessions", "watchdog for my agents", "which chats got stuck", "despierta a los chats", "chats pegados", "se quedó pegado", "que trabajen solos", "revisa si algún chat se trabó". Not for resuming the CURRENT session after an interruption (use keep-going) and not for status reports (use report-now).
 ---
 
 # Session watchdog
@@ -40,7 +40,9 @@ If it is still pending, continue it now and finish with your normal report.
 If it is already done or no longer needed, reply only "nothing pending" and stop.
 Do not redo finished work.
 ```
-Send it with `SendMessage` (to = the session's `local_…` id). Delivery `queued` is fine.
+**Ask before sending.** Show the user each proposed wake (session title, state, the exact message) and send only the ones they say yes to, with `SendMessage` (to = the session's `local_…` id). Delivery `queued` is fine.
+
+A scheduled run has nobody to say yes, so it **never messages another session**: it writes the proposed wakes into its report, and they go out after the user's yes in a live session. Do not pre-approve `SendMessage` to get around this.
 
 ## Hard limits (check the log before every wake)
 - Max **1 wake per session per 3 h**, and **2 per session per day**. A session already woken twice today goes to the user report instead.
@@ -50,7 +52,7 @@ Send it with `SendMessage` (to = the session's `local_…` id). Delivery `queued
 
 ## Report (only if something needs the user)
 At most 6 lines, with the real time:
-- woken: title, state, why, in one line each;
+- to wake (waiting for your yes): title, state, why, and the exact message, one line each;
 - needs you: title and the one thing it waits for (CAPTCHA, code, approval);
 - hung: title, and how long it has been without moving.
 
@@ -71,5 +73,5 @@ Run it every 1-2 hours while the machine is on. Each run costs one `list_session
 
 A scheduled run has nobody to approve a prompt, so any tool call that asks for permission ends the run. Two checks before trusting the schedule:
 1. **Allow exactly what it uses**, and write the command in the task prompt **letter for letter** as the allow rule says. Same tool (Bash or PowerShell), same slashes, nothing chained with `;`, `&&` or `|`, no `cd`. Read files with Read or Grep, never with `head` or `cat`. Example allow list:
-   `Skill(session-watchdog)`, `mcp__ccd_session_mgmt__list_sessions`, `mcp__ccd_session_mgmt__list_events`, `SendMessage`, `Grep`, `Bash(python /abs/path/scripts/wake_log.py:*)`.
+   `Skill(session-watchdog)`, `mcp__ccd_session_mgmt__list_sessions`, `mcp__ccd_session_mgmt__list_events`, `Grep`, `Bash(python /abs/path/scripts/wake_log.py:*)`. `SendMessage` stays off the list: sending a wake needs the user's yes.
 2. **Do not trust "succeeded".** The app marks interrupted runs as succeeded. Open the first run's last lines: it must end with `done (success)` and leave a beat.

@@ -1,11 +1,11 @@
 # session-watchdog
 
-**Wake the Claude Code sessions that got stuck, and leave the finished ones alone.**
+**Find the Claude Code sessions that got stuck, wake them on your yes, and leave the finished ones alone.**
 
 `session-watchdog` is an agent skill for the Claude desktop app (Claude Code). A session that stops halfway looks exactly like one that finished: both are idle. You find out hours later, when you ask "are you stuck?".
 
 This skill runs on a schedule and reads every session from the outside. It sorts each one into **DONE / WAITING-ON-USER / WAITING-ON-BACKGROUND / STOPPED-MID-TASK / ERROR / HUNG**, then acts:
-- it **wakes only the stuck ones**, with a message that quotes their own pending step;
+- it **proposes waking only the stuck ones**, with a message that quotes their own pending step, and sends it only after you say yes;
 - it **never wakes** sessions that finished, that wait for you (a code, a login, an approval) or that are still running;
 - it **reports** what only you can unblock.
 
@@ -15,7 +15,7 @@ This skill runs on a schedule and reads every session from the outside. It sorts
 
 **Without the skill:** a session stops halfway on a rate limit and stays stopped until you ask "are you stuck?" the next morning.
 
-**With the skill:** the watchdog reads every session's last turn, sorts it (done, waiting on you, stopped mid-task, error, hung) and wakes only the stuck ones, quoting their own pending step. It never wakes a finished session.
+**With the skill:** the watchdog reads every session's last turn, sorts it (done, waiting on you, stopped mid-task, error, hung) and lists only the stuck ones, each with a wake message that quotes its own pending step. You say yes and they go out. It never wakes a finished session, and a scheduled run never messages another session on its own.
 
 **Skip it if** you run one session and watch it yourself.
 
@@ -24,11 +24,12 @@ This skill runs on a schedule and reads every session from the outside. It sorts
 ## Why you can trust it on a schedule
 
 - **Hard limits in a log**: at most 1 wake per session every 3 h, 2 per day and 5 per run. `wake_log.py can-wake` enforces them before every message.
+- **No message without your yes.** A scheduled run only reads and reports. `SendMessage` is not pre-allowed.
 - **When unsure, it picks DONE.** A wrong wake costs money and can redo finished work. A missed one gets caught on the next run.
 - **A dead-man switch watches the watchdog.** Every run ends with a heartbeat. A `UserPromptSubmit` hook prints one line in any session you type in when the heartbeat is more than 5 h old, or when the schedule was set up and no run ever finished.
 - **Built from a real failure.** Its first 6 scheduled runs died silently on a permission prompt, and the app still marked them "succeeded". The skill now covers both traps: exact allow rules, and checking the run's real last line instead of the label.
 
-The first clean run checked 36 sessions, woke none (none needed it) and left its heartbeat in 2 minutes.
+The first clean run checked 36 sessions, found none to wake and left its heartbeat in 2 minutes.
 
 ## Install
 
