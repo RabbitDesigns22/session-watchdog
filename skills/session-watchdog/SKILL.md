@@ -64,7 +64,7 @@ What can fail is the app being closed or a run getting stuck. Cover that with a
 dead-man switch:
 - The **last step of every run**: `python scripts/wake_log.py beat`.
 - When you schedule it, run `python scripts/wake_log.py arm` once. The overdue clock starts there.
-- A `UserPromptSubmit` hook runs `python scripts/wake_log.py check-beat 5`. It stays silent while the last beat is under 5 h old. After that, every session the user types in shows one line saying the watchdog is overdue, so the user finds out on their next message.
+- A `UserPromptSubmit` hook runs `python scripts/wake_log.py check-beat 5` (show the user the exact JSON block and add it only after their yes). It stays silent while the last beat is under 5 h old. After that, every session the user types in shows one line saying the watchdog is overdue, so the user finds out on their next message.
 - If no run has ever finished, the clock counts from `arm`. Seen live: 6 scheduled runs died on a permission prompt and nothing complained, because "never ran" used to count as "no alarm".
 - The watchdog skips its own past runs when sorting sessions. The heartbeat is what catches a dead watchdog.
 
