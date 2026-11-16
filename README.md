@@ -34,7 +34,7 @@ The first clean run checked 36 sessions, found none to wake and left its heartbe
 ## Install
 
 ```bash
-npx skills add RabbitDesigns22/session-watchdog
+npx skills@1.8.1 add https://github.com/RabbitDesigns22/session-watchdog/tree/f9fb9ae413b1d7e8c577242fbc5c63772cd8568c
 ```
 
 Then:
@@ -59,7 +59,7 @@ It needs the desktop app's session tools (`list_sessions`, `list_events`, `SendM
 
 Tiene límites duros y una marca de vida: si el vigilante deja de correr, cualquier chat donde escribas te lo dice.
 
-Instalar: `npx skills add RabbitDesigns22/session-watchdog`
+Instalar: `npx skills@1.8.1 add https://github.com/RabbitDesigns22/session-watchdog/tree/f9fb9ae413b1d7e8c577242fbc5c63772cd8568c`
 
 ## More skills from the same setup
 
